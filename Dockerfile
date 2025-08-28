@@ -26,6 +26,9 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends unzip \
  && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --user uv chainlit && uv venv && uv sync
+
+
 # Non-root
 RUN useradd -m -u 1000 user
 USER user
@@ -42,16 +45,6 @@ ENV PATH="/home/user/.venv/bin:${PATH}"
 COPY --chown=user app.py ./app.py
 # Optional: unzip bills.zip at *runtime start* if present (no layer cost).
 # Create a tiny entrypoint that unzips if found, then launches Chainlit.
-COPY --chown=user <<'SH' /app/entrypoint.sh
-#!/usr/bin/env sh
-set -eu
-if [ -f /app/bills.zip ]; then
-  mkdir -p /app/bills
-  unzip -o /app/bills.zip -d /app/bills >/dev/null 2>&1 || true
-fi
-exec uv run chainlit run /app/app.py -h 0.0.0.0 -p "${PORT:-8080}" --headless
-SH
-RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8080
-CMD ["/app/entrypoint.sh"]
+CMD ["sh", "-c", "uv run chainlit run app.py -h 0.0.0.0 -p ${PORT:-8080} --headless"]
