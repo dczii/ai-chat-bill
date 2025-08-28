@@ -35,7 +35,7 @@ WORKDIR /app
 ENV PATH="/home/user/.venv/bin:${PATH}"
 
 # Copy the resolved, compact venv from builder
-COPY --from=builder --chown=user /home/user/.venv /home/user/.venv
+# COPY --from=builder --chown=user /home/user/.venv /home/user/.venv
 
 # Copy only what you need to run
 # (Avoid copying big data, node_modules, .git, etc.)
