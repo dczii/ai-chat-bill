@@ -1,38 +1,35 @@
-# Python 3.12 to satisfy requires-python >=3.12 from pyproject
 FROM python:3.12-slim
 
-# Make uv behave well in containers
-ENV UV_LINK_MODE=copy \
-    UV_PYTHON=python3 \
-    PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PATH="/root/.local/bin:$PATH"
+# tools needed: curl + unzip
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl unzip \
+ && rm -rf /var/lib/apt/lists/*
 
-# System deps: curl (for uv installer), unzip (to extract bills.zip)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl unzip && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install uv (https://astral.sh/uv)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    ln -s /root/.local/bin/uv /usr/local/bin/uv
-
-# App files
+# non-root user
+RUN useradd -m -u 1000 user
+USER user
 WORKDIR /app
 
-# Sync Python deps first for better Docker layer caching
-COPY pyproject.toml /app/pyproject.toml
-# If you have a uv.lock, copy it too for reproducible builds:
-# COPY uv.lock /app/uv.lock
-RUN uv sync --no-dev --frozen
+# make sure uv ends up on PATH
+ENV PATH="/home/user/.local/bin:/home/user/.venv/bin:${PATH}"
 
-# Bring in the rest of the code (including app.py, bills.zip, static/, etc.)
-COPY . /app
+# --- Install uv (no flags!) ---
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Extract bills.zip into /app/bills if it exists
-RUN mkdir -p /app/bills && \
-    if [ -f /app/bills.zip ]; then unzip -o /app/bills.zip -d /app/bills; fi
+# deps layer
+COPY --chown=user pyproject.toml ./
+COPY --chown=user static ./static
 
-# Heroku provides $PORT; use Chainlit headless mode
-# NOTE: use sh -c so $PORT expands
-CMD ["sh", "-c", "uv run chainlit run app.py -h 0.0.0.0 -p $PORT --headless"]
+# chainlit via pip; create venv; sync deps (use uv.lock if present; otherwise resolve)
+RUN pip install --user --no-cache-dir chainlit \
+ && uv venv \
+ && uv sync --frozen || uv sync
+
+# app code
+COPY --chown=user . /app
+
+# unzip bills if present (don’t fail if missing)
+RUN [ -f /app/bills.zip ] && unzip -o /app/bills.zip -d /app/bills || true
+
+EXPOSE 8080
+CMD ["sh", "-c", "uv run chainlit run app.py -h 0.0.0.0 -p ${PORT:-8080} --headless"]
