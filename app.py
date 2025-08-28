@@ -35,7 +35,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 async def on_chat_start():
     elements = [
         cl.Image(name="logo", display="inline",
-                 path="static/Logo.png")
+                 url="https://w7.pngwing.com/pngs/630/502/png-transparent-artificial-intelligence-computer-icons-robotics-artificial-intelligence-icon-angle-text-computer-thumbnail.png")
     ]
     
     await cl.Message(content="Hello! Welcome to Danilo's Chatbot!",
