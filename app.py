@@ -143,10 +143,9 @@ async def on_message(message: cl.Message):
 
     await cl.Message(content=answer).send()
 
-from chainlit.server import app
-
-def handler(request):
-    return app(request)
+from chainlit.server import app as chainlit_app
+app = chainlit_app  # <-- this is what Vercel will invoke
 
 if __name__ == "__main__":
+    import chainlit as cl, os
     cl.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
