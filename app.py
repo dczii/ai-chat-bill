@@ -142,3 +142,11 @@ async def on_message(message: cl.Message):
         answer += "\n\n**Sources:**\n" + "\n".join(lines)
 
     await cl.Message(content=answer).send()
+
+from chainlit.server import app
+
+def handler(request):
+    return app(request)
+
+if __name__ == "__main__":
+    cl.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
