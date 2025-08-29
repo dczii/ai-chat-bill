@@ -29,14 +29,11 @@ async def on_chat_start():
     await cl.Message(content="Hello! Welcome to Danilo's Chatbot!", elements=elements).send()
 
     cl.user_session.set("chat_history", [])
-    
+
     model = ChatOpenAI(streaming=True)
     prompt = ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                SYSTEM_PROMPT,
-            ),
+            ("system", SYSTEM_PROMPT),
             ("human", "{question}"),
         ]
     )
@@ -46,7 +43,6 @@ async def on_chat_start():
 @cl.on_message
 async def on_message(message: cl.Message):
     runnable = cast(Runnable, cl.user_session.get("runnable"))
-
     msg = cl.Message(content="")
 
     async for chunk in runnable.astream(
@@ -57,13 +53,18 @@ async def on_message(message: cl.Message):
 
     await msg.send()
 
-# For Vercel deployment - expose the ASGI app
-from chainlit.server import app
+# -----------------------------
+# Railway / ASGI entrypoint
+# -----------------------------
+# Ensure Chainlit knows what app to load when served as ASGI
+os.environ.setdefault("CHAINLIT_APP", __file__)
+os.environ.setdefault("CHAINLIT_HOST", "0.0.0.0")
+os.environ.setdefault("CHAINLIT_PORT", os.environ.get("PORT", "8000"))
 
-# This is what Vercel will use
-def handler(request):
-    return app(request)
+# Expose the ASGI app for uvicorn/gunicorn
+from chainlit.server import app as chainlit_asgi_app
+app = chainlit_asgi_app  # <- Railway will serve this via uvicorn
 
-# For local development
 if __name__ == "__main__":
-    cl.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    import uvicorn
+    uvicorn.run(app, host=os.environ["CHAINLIT_HOST"], port=int(os.environ["CHAINLIT_PORT"]))

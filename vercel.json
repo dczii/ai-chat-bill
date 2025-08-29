@@ -1,3 +1,20 @@
 {
-  "routes": [{ "src": "/(.*)", "dest": "https://ai-chat-bill-production.up.railway.app/$1" }]
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "."
+  }
 }
