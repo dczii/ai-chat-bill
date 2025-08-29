@@ -1,0 +1,9 @@
+# keep Vercel’s upload small
+node_modules/
+**/node_modules/
+
+# (optional) other big/irrelevant stuff
+.venv/
+__pycache__/
+.cache/
+cache/
