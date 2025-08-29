@@ -17,38 +17,37 @@ SYSTEM_PROMPT = (
     "Cite specific sections if possible."
 )
 
+from llm_api import openai_chatbot_chain
+import chainlit as cl
+
+#|--------------------------------------------------------------------------|
+#|                            On Boarding                                   |
+#|--------------------------------------------------------------------------|
 @cl.on_chat_start
 async def on_chat_start():
-    elements = [
-        cl.Image(
-            name="logo",
-            display="inline",
-            path="./static/Logo.png",
-        )
-    ]
-    await cl.Message(content="Hello! Welcome to Danilo's Chatbot!", elements=elements).send()
-
-    cl.user_session.set("chat_history", [])
-
-    model = ChatOpenAI(streaming=True)
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", SYSTEM_PROMPT),
-            ("human", "{question}"),
-        ]
+    cl.user_session.set(
+        "message_history",
+        [{"role": "system", "content": SYSTEM_PROMPT}],
     )
-    runnable = prompt | model | StrOutputParser()
-    cl.user_session.set("runnable", runnable)
+    app_user = cl.user_session.get("user")
+    await cl.Message(f"Hello User").send()
 
+#|--------------------------------------------------------------------------|
+#|                               Chat                                       |
+#|--------------------------------------------------------------------------|
 @cl.on_message
-async def on_message(message: cl.Message):
-    runnable = cast(Runnable, cl.user_session.get("runnable"))
-    msg = cl.Message(content="")
+async def main(user_input: cl.Message):
+    message_history = cl.user_session.get("message_history")
+    message_history.append({"role": "user", "content": user_input.content})
 
-    async for chunk in runnable.astream(
-        {"question": message.content},
-        config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
-    ):
-        await msg.stream_token(chunk)
+    llm_output = cl.Message(content="")
+    await llm_output.send()
 
-    await msg.send()
+    stream = await openai_chatbot_chain(message_history)
+
+    async for part in stream:
+        if token := part.choices[0].delta.content or "":
+            await llm_output.stream_token(token)
+
+    message_history.append({"role": "assistant", "content": llm_output.content})
+    await llm_output.update()
