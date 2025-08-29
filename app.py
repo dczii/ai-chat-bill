@@ -52,19 +52,3 @@ async def on_message(message: cl.Message):
         await msg.stream_token(chunk)
 
     await msg.send()
-
-# -----------------------------
-# Railway / ASGI entrypoint
-# -----------------------------
-# Ensure Chainlit knows what app to load when served as ASGI
-os.environ.setdefault("CHAINLIT_APP", __file__)
-os.environ.setdefault("CHAINLIT_HOST", "0.0.0.0")
-os.environ.setdefault("CHAINLIT_PORT", os.environ.get("PORT", "5000"))
-
-# Expose the ASGI app for uvicorn/gunicorn
-from chainlit.server import app as chainlit_asgi_app
-app = chainlit_asgi_app  # <- Railway will serve this via uvicorn
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host=os.environ["CHAINLIT_HOST"], port=int(os.environ["CHAINLIT_PORT"]))
