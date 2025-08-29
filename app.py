@@ -143,8 +143,7 @@ async def on_message(message: cl.Message):
 
     await cl.Message(content=answer).send()
 
-from chainlit.server import app as chainlit_app
-app = chainlit_app  # <-- this is what Vercel will invoke
+from chainlit.server import app  # ASGI for Vercel
 
 if __name__ == "__main__":
     import chainlit as cl, os
