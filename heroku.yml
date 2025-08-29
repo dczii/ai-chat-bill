@@ -1,6 +1,0 @@
-build:
-  docker:
-    web: Dockerfile
-
-run:
-  web: sh -c "uv run chainlit run app.py -h 0.0.0.0 -p \$PORT --headless"
